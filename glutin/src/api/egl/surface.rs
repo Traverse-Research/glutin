@@ -503,7 +503,7 @@ impl NativeWindow {
             },
             #[cfg(android_platform)]
             RawWindowHandle::AndroidNdk(window_handle) => {
-                Self::Android(window_handle.a_native_window.as_mut())
+                Self::Android(unsafe { window_handle.a_native_window.as_mut() })
             },
             #[cfg(windows)]
             RawWindowHandle::Win32(window_handle) => {
