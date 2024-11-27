@@ -63,7 +63,7 @@ pub fn main(event_loop: winit::event_loop::EventLoop<()>) -> Result<(), Box<dyn 
 
     println!("Picked a config with {} samples", gl_config.num_samples());
 
-    let raw_window_handle = window.as_ref().map(|window| window.raw_window_handle());
+    let raw_window_handle = window.as_ref().map(|window| window.raw_window_handle().ok()).flatten();
 
     // XXX The display could be obtained from the any object created by it, so we
     // can query it from the config.

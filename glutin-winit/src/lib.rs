@@ -104,7 +104,7 @@ impl DisplayBuilder {
         };
 
         #[cfg(wgl_backend)]
-        let raw_window_handle = window.as_ref().map(|window| window.raw_window_handle());
+        let raw_window_handle = window.as_ref().map(|window| window.raw_window_handle().ok()).flatten();
         #[cfg(not(wgl_backend))]
         let raw_window_handle = None;
 
@@ -170,7 +170,7 @@ fn create_display<T>(
         ApiPreference::FallbackEgl => DisplayApiPreference::WglThenEgl(_raw_window_handle),
     };
 
-    unsafe { Ok(Display::new(window_target.raw_display_handle(), _preference)?) }
+    unsafe { Ok(Display::new(window_target.raw_display_handle()?, _preference)?) }
 }
 
 /// Finalize [`Window`] creation by applying the options from the [`Config`], be

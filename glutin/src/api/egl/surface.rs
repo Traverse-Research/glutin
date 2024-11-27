@@ -511,11 +511,7 @@ impl NativeWindow {
             },
             #[cfg(windows)]
             RawWindowHandle::Win32(window_handle) => {
-                if window_handle.hwnd.is_null() {
-                    return Err(ErrorKind::BadNativeWindow.into());
-                }
-
-                Self::Win32(window_handle.hwnd as _)
+                Self::Win32(window_handle.hwnd.into())
             },
             #[cfg(free_unix)]
             RawWindowHandle::Gbm(window_handle) => {

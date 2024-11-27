@@ -61,7 +61,11 @@ impl Display {
             if let Some(RawWindowHandle::Win32(window)) = native_window {
                 unsafe {
                     let (wgl_extra, client_extensions) =
-                        super::load_extra_functions(window.hinstance as _, window.hwnd as _)?;
+                        super::load_extra_functions(if let Some(hinst) = window.hinstance {
+                            hinst.into()
+                        } else {
+                            0isize
+                        }, window.hwnd.into())?;
                     (Some(wgl_extra), client_extensions)
                 }
             } else {

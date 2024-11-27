@@ -196,11 +196,11 @@ impl Display {
                 // XXX This can't be done by passing visual in the EGL attributes
                 // when calling `eglChooseConfig` since the visual is ignored.
                 match template.native_window {
-                    Some(RawWindowHandle::Xcb(xcb)) if xcb.visual_id > 0 => {
-                        xcb.visual_id as u32 == config.native_visual()
+                    Some(RawWindowHandle::Xcb(xcb)) => {
+                        xcb.visual_id == if config.native_visual() != 0 { Some(std::num::NonZeroU32::new(config.native_visual()).unwrap()) } else { None }
                     },
                     Some(RawWindowHandle::Xlib(xlib)) if xlib.visual_id > 0 => {
-                        xlib.visual_id as u32 == config.native_visual()
+                        xlib.visual_id == config.native_visual().into()
                     },
                     _ => true,
                 }

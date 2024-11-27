@@ -53,7 +53,7 @@ impl GlWindow for Window {
         builder: SurfaceAttributesBuilder<WindowSurface>,
     ) -> SurfaceAttributes<WindowSurface> {
         let (w, h) = self.inner_size().non_zero().expect("invalid zero inner size");
-        builder.build(self.raw_window_handle(), w, h)
+        builder.build(self.raw_window_handle().unwrap(), w, h)
     }
 
     fn resize_surface(
