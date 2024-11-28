@@ -244,16 +244,20 @@ impl Display {
             RawDisplayHandle::Wayland(mut handle)
                 if extensions.contains("EGL_KHR_platform_wayland") =>
             {
-                (egl::PLATFORM_WAYLAND_KHR, handle.display.as_mut() as *mut _)
+                (egl::PLATFORM_WAYLAND_KHR, handle.display.as_ptr().cast())
             },
             #[cfg(x11_platform)]
             RawDisplayHandle::Xlib(mut handle) if extensions.contains("EGL_KHR_platform_x11") => {
                 attrs.push(egl::PLATFORM_X11_SCREEN_KHR as EGLAttrib);
                 attrs.push(handle.screen as EGLAttrib);
-                (egl::PLATFORM_X11_KHR, handle.display.as_mut() as *mut _)
+                (egl::PLATFORM_X11_KHR, if let Some(display) = handle.display {
+                    display.as_ptr().cast()
+                } else {
+                    std::ptr::null_mut()
+                })
             },
             RawDisplayHandle::Gbm(mut handle) if extensions.contains("EGL_KHR_platform_gbm") => {
-                (egl::PLATFORM_GBM_KHR, handle.gbm_device.as_mut() as *mut _)
+                (egl::PLATFORM_GBM_KHR, handle.gbm_device.as_ptr().cast())
             },
             RawDisplayHandle::Android(_) if extensions.contains("EGL_KHR_platform_android") => {
                 (egl::PLATFORM_ANDROID_KHR, egl::DEFAULT_DISPLAY as *mut _)
@@ -320,13 +324,17 @@ impl Display {
             RawDisplayHandle::Wayland(mut handle)
                 if extensions.contains("EGL_EXT_platform_wayland") =>
             {
-                (egl::PLATFORM_WAYLAND_EXT, handle.display.as_mut() as *mut _)
+                (egl::PLATFORM_WAYLAND_EXT, handle.display.as_ptr().cast())
             },
             #[cfg(x11_platform)]
             RawDisplayHandle::Xlib(mut handle) if extensions.contains("EGL_EXT_platform_x11") => {
                 attrs.push(egl::PLATFORM_X11_SCREEN_EXT as EGLint);
                 attrs.push(handle.screen as EGLint);
-                (egl::PLATFORM_X11_EXT, handle.display.as_mut() as *mut _)
+                (egl::PLATFORM_X11_EXT, if let Some(display) = handle.display {
+                    display.as_ptr().cast()
+                } else {
+                    std::ptr::null_mut()
+                })
             },
             #[cfg(x11_platform)]
             RawDisplayHandle::Xcb(mut handle)
@@ -335,10 +343,14 @@ impl Display {
             {
                 attrs.push(egl::PLATFORM_XCB_SCREEN_EXT as EGLint);
                 attrs.push(handle.screen as EGLint);
-                (egl::PLATFORM_XCB_EXT, handle.connection.as_mut() as *mut _)
+                (egl::PLATFORM_XCB_EXT, if let Some(connection) = handle.connection {
+                    connection.as_ptr().cast()
+                } else {
+                    std::ptr::null_mut()
+                })
             },
             RawDisplayHandle::Gbm(mut handle) if extensions.contains("EGL_MESA_platform_gbm") => {
-                (egl::PLATFORM_GBM_MESA, handle.gbm_device.as_mut() as *mut _)
+                (egl::PLATFORM_GBM_MESA, handle.gbm_device.as_ptr().cast())
             },
             RawDisplayHandle::Windows(..) if extensions.contains("EGL_ANGLE_platform_angle") => {
                 // Only CreateWindowSurface appears to work with Angle.
@@ -404,10 +416,14 @@ impl Display {
     }
 
     fn get_display(egl: &Egl, display: RawDisplayHandle) -> Result<EglDisplay> {
-        let mut display = unsafe { match display {
-            RawDisplayHandle::Gbm(mut handle) => handle.gbm_device.as_mut(),
+        let mut display : *mut std::ffi::c_void = unsafe { match display {
+            RawDisplayHandle::Gbm(mut handle) => handle.gbm_device.as_ptr().cast(),
             #[cfg(x11_platform)]
-            RawDisplayHandle::Xlib(mut handle) => handle.display.as_mut(),
+            RawDisplayHandle::Xlib(mut handle) => if let Some(display) = handle.display {
+                display.as_ptr().cast()
+            } else {
+                std::ptr::null_mut()
+            },
             RawDisplayHandle::Android(_) => egl::DEFAULT_DISPLAY as *mut _,
             _ => {
                 return Err(

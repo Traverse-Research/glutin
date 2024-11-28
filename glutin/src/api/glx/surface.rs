@@ -112,10 +112,6 @@ impl Display {
     ) -> Result<Surface<WindowSurface>> {
         let window = match surface_attributes.raw_window_handle.unwrap() {
             RawWindowHandle::Xlib(window_handle) => {
-                if window_handle.window == 0 {
-                    return Err(ErrorKind::BadNativeWindow.into());
-                }
-
                 window_handle.window
             },
             _ => {

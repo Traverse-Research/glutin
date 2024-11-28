@@ -197,10 +197,10 @@ impl Display {
                 // when calling `eglChooseConfig` since the visual is ignored.
                 match template.native_window {
                     Some(RawWindowHandle::Xcb(xcb)) => {
-                        xcb.visual_id == if config.native_visual() != 0 { Some(std::num::NonZeroU32::new(config.native_visual()).unwrap()) } else { None }
+                        xcb.visual_id.map_or(false, |id| id.get() == config.native_visual())
                     },
                     Some(RawWindowHandle::Xlib(xlib)) if xlib.visual_id > 0 => {
-                        xlib.visual_id == config.native_visual().into()
+                        xlib.visual_id as u32 == config.native_visual()
                     },
                     _ => true,
                 }
@@ -327,21 +327,15 @@ impl GlConfig for Config {
         unsafe { self.raw_attribute(egl::CONFIG_CAVEAT as EGLint) != egl::SLOW_CONFIG as EGLint }
     }
 
-    #[cfg(not(any(wayland_platform, x11_platform)))]
     fn supports_transparency(&self) -> Option<bool> {
-        None
-    }
-
-    #[cfg(any(wayland_platform, x11_platform))]
-    fn supports_transparency(&self) -> Option<bool> {
-        use raw_window_handle::RawDisplayHandle;
         match *self.inner.display.inner._native_display? {
             #[cfg(x11_platform)]
-            RawDisplayHandle::Xlib(_) | RawDisplayHandle::Xcb(_) => {
+            raw_window_handle::RawDisplayHandle::Xlib(_)
+            | raw_window_handle::RawDisplayHandle::Xcb(_) => {
                 self.x11_visual().map(|visual| visual.supports_transparency())
             },
             #[cfg(wayland_platform)]
-            RawDisplayHandle::Wayland(_) => Some(self.alpha_size() != 0),
+            raw_window_handle::RawDisplayHandle::Wayland(_) => Some(self.alpha_size() != 0),
             _ => None,
         }
     }
@@ -370,7 +364,7 @@ impl GetGlDisplay for Config {
     type Target = Display;
 
     fn display(&self) -> Self::Target {
-        Display { inner: self.inner.display.inner.clone() }
+        self.inner.display.clone()
     }
 }
 
@@ -386,7 +380,7 @@ impl X11GlConfigExt for Config {
         match *self.inner.display.inner._native_display? {
             raw_window_handle::RawDisplayHandle::Xlib(display_handle) => unsafe {
                 let xid = self.native_visual();
-                X11VisualInfo::from_xid(display_handle.display as *mut _, xid as _)
+                X11VisualInfo::from_xid(display_handle.display?.as_ptr() as *mut _, xid as _)
             },
             _ => None,
         }
