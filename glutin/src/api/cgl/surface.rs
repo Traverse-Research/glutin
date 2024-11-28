@@ -59,21 +59,21 @@ impl Display {
 
         // SAFETY: Validity of the view and window is ensured by caller
         // This function makes sure the window is non null.
-        let ns_view = if let Some(ns_view) = unsafe { Id::retain(native_window.ns_view.as_ptr().cast()) } {
+        let ns_view: Id<NSView> = if let Some(ns_view) = unsafe { Id::retain(native_window.ns_view.as_ptr().cast()) } {
             ns_view
         } else {
             return Err(ErrorKind::NotSupported("ns_view of provided native window is nil").into());
         };
+
+        let ns_window = if let Some(ns_window) = unsafe { ns_view.window() } {
+            ns_window
+        } else {
+            return Err(
+                ErrorKind::NotSupported("ns_window of provided native window is nil").into()
+            );
+        };
         let ns_view = MainThreadBound::new(ns_view, mtm);
 
-        let ns_window =
-            if let Some(ns_window) = unsafe { Id::retain(native_window.ns_window.as_ptr().cast()) } {
-                ns_window
-            } else {
-                return Err(
-                    ErrorKind::NotSupported("ns_window of provided native window is nil").into()
-                );
-            };
         let ns_window = MainThreadBound::new(ns_window, mtm);
 
         let surface = Surface {
